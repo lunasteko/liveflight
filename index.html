@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>LiveFlight</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body { margin:0; font-family:sans-serif; }
+    #map { height: 100vh; }
+    .leaflet-popup-content { font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map').setView([48.85837, 2.294481], 6);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Charger les données fictives depuis sample.json
+    fetch('sample.json')
+      .then(r => r.json())
+      .then(data => {
+        (data.ac || []).forEach(ac => {
+          if (!ac.lat || !ac.lon) return;
+          const marker = L.marker([ac.lat, ac.lon]).addTo(map);
+          marker.bindPopup(`
+            <b>${ac.flight || "(sans indicatif)"}</b><br>
+            Hex: ${ac.hex}<br>
+            Alt: ${ac.alt_baro || "?"} ft<br>
+            Vitesse: ${ac.gs || "?"} kt<br>
+            Cap: ${ac.track || "?"}°<br>
+            Type: ${ac.t || "?"}
+          `);
+        });
+      });
+  </script>
+</body>
+</html>
