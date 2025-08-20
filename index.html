@@ -28,8 +28,8 @@
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    // Initialiser la carte
-    const map = L.map('map').setView([48.85837, 2.294481], 5); // zoom Europe
+    // Initialiser la carte centrée sur l'Europe
+    const map = L.map('map').setView([48.85837, 2.294481], 5);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
@@ -41,11 +41,11 @@
     async function loadFlights() {
       document.getElementById('loading').textContent = "Mise à jour...";
       try {
-        const res = await fetch('https://opensky-network.org/api/states/all');
+        // Utilisation d’un proxy pour contourner CORS
+        const res = await fetch('https://corsproxy.io/?https://opensky-network.org/api/states/all');
         const data = await res.json();
 
         const states = data.states || [];
-        const now = Date.now();
 
         states.forEach(s => {
           const icao = s[0];
@@ -75,7 +75,7 @@
           }
         });
 
-        document.getElementById('loading').textContent = 
+        document.getElementById('loading').textContent =
           `Dernière mise à jour : ${new Date().toLocaleTimeString()}`;
       } catch (e) {
         document.getElementById('loading').textContent = "Erreur de chargement 😢";
