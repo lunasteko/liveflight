@@ -1,0 +1,6 @@
+{
+  "ac": [
+    { "hex": "39C123", "flight": "AFR1234", "lat": 48.9, "lon": 2.3, "alt_baro": 35000, "gs": 460, "track": 120, "t": "A20N" },
+    { "hex": "3C4B12", "flight": "DLH567", "lat": 50.1, "lon": 8.7, "alt_baro": 37000, "gs": 470, "track": 95, "t": "B738" }
+  ]
+}
