@@ -2,42 +2,92 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>LiveFlight</title>
+  <title>LiveFlight – OpenSky</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
     body { margin:0; font-family:sans-serif; }
     #map { height: 100vh; }
     .leaflet-popup-content { font-size: 14px; }
+    #loading {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      z-index: 1000;
+    }
   </style>
 </head>
 <body>
+  <div id="loading">Chargement des avions...</div>
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    const map = L.map('map').setView([48.85837, 2.294481], 6);
+    // Initialiser la carte
+    const map = L.map('map').setView([48.85837, 2.294481], 5); // zoom Europe
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // Charger les données fictives depuis sample.json
-    fetch('sample.json')
-      .then(r => r.json())
-      .then(data => {
-        (data.ac || []).forEach(ac => {
-          if (!ac.lat || !ac.lon) return;
-          const marker = L.marker([ac.lat, ac.lon]).addTo(map);
-          marker.bindPopup(`
-            <b>${ac.flight || "(sans indicatif)"}</b><br>
-            Hex: ${ac.hex}<br>
-            Alt: ${ac.alt_baro || "?"} ft<br>
-            Vitesse: ${ac.gs || "?"} kt<br>
-            Cap: ${ac.track || "?"}°<br>
-            Type: ${ac.t || "?"}
-          `);
+    const markers = {};
+
+    // Fonction pour charger les avions
+    async function loadFlights() {
+      document.getElementById('loading').textContent = "Mise à jour...";
+      try {
+        const res = await fetch('https://opensky-network.org/api/states/all');
+        const data = await res.json();
+
+        const states = data.states || [];
+        const now = Date.now();
+
+        states.forEach(s => {
+          const icao = s[0];
+          const callsign = s[1]?.trim() || "(inconnu)";
+          const lon = s[5];
+          const lat = s[6];
+          const velocity = s[9];
+          const heading = s[10];
+          const altitude = s[13];
+
+          if (!lat || !lon) return;
+
+          // Si l’avion existe déjà → déplacer le marqueur
+          if (markers[icao]) {
+            markers[icao].setLatLng([lat, lon]);
+          } else {
+            // Sinon → créer un nouveau marqueur
+            const marker = L.marker([lat, lon]).addTo(map);
+            marker.bindPopup(`
+              <b>${callsign}</b><br>
+              ICAO24: ${icao}<br>
+              Alt: ${altitude || "?"} m<br>
+              Vitesse: ${velocity ? (velocity*3.6).toFixed(0) : "?"} km/h<br>
+              Cap: ${heading || "?"}°
+            `);
+            markers[icao] = marker;
+          }
         });
-      });
+
+        document.getElementById('loading').textContent = 
+          `Dernière mise à jour : ${new Date().toLocaleTimeString()}`;
+      } catch (e) {
+        document.getElementById('loading').textContent = "Erreur de chargement 😢";
+        console.error(e);
+      }
+    }
+
+    // Charger au début
+    loadFlights();
+
+    // Puis recharger toutes les 15 secondes
+    setInterval(loadFlights, 15000);
   </script>
 </body>
 </html>
